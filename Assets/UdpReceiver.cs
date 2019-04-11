@@ -1,10 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
+using System;
 
 public class UdpReceiver : MonoBehaviour {
 	public int listenPort = 2002; // ポートはサーバ・クライアントで合わせる必要がある
 	private bool received = false;
+
+    private int H;
+    private int W;
+    private byte[] ReceiveBytes;
 
     private struct UdpState {
 		public System.Net.IPEndPoint e;
@@ -15,7 +20,7 @@ public class UdpReceiver : MonoBehaviour {
 		System.Net.Sockets.UdpClient u = (System.Net.Sockets.UdpClient)((UdpState)(ar.AsyncState)).u;
 		System.Net.IPEndPoint e = (System.Net.IPEndPoint)((UdpState)(ar.AsyncState)).e;
 		var receiveBytes = u.EndReceive(ar, ref e);
-
+        Debug.Log(BitConverter.ToString(receiveBytes));
         int pos = 16; // 16バイトから開始
 
         int width = 0;
@@ -30,13 +35,10 @@ public class UdpReceiver : MonoBehaviour {
             height = height * 256 + receiveBytes[pos++];
         }
 
-        Texture2D texture = new Texture2D(width, height);
-        texture.LoadImage(receiveBytes);
+        ReceiveBytes = receiveBytes;
 
-        RawImage image = GetComponent<RawImage>();
-        image.texture = texture;
-
-        Debug.Log("Received"); // ここに任意の処理を書く
+        H = height;
+        W = width;
 
         received = true;
 	}
@@ -60,4 +62,16 @@ public class UdpReceiver : MonoBehaviour {
 	void Start () {
         StartCoroutine(receive_loop());
 	}
+
+    void Update()
+    {
+        if (received)
+        {
+            Texture2D texture = new Texture2D(W, H);
+            texture.LoadImage(ReceiveBytes);
+
+            RawImage image = GetComponent<RawImage>();
+            image.texture = texture;
+        }
+    }
 }
